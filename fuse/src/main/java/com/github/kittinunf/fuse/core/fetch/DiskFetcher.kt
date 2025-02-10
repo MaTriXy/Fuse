@@ -14,7 +14,7 @@ class DiskFetcher<T : Any>(private val file: File, private val convertible: Fuse
 
     override fun fetch(): Result<T, Exception> {
         val readFileResult = Result.of<ByteArray, Exception> { file.readBytes() }
-        if (cancelled) return Result.error(RuntimeException("Fetch got cancelled"))
+        if (cancelled) return Result.failure(RuntimeException("Fetch got cancelled"))
         return readFileResult.map { convertFromData(it) }
     }
 

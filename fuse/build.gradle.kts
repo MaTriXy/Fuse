@@ -1,23 +1,30 @@
 plugins {
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.3.60"
+    kotlin("jvm")
+    kotlin("plugin.serialization")
+    id("publication")
 }
 
+val artifactGroupId: String by project
+group = artifactGroupId
+
+val gitSha = "git rev-parse --short HEAD".runCommand(project.rootDir)?.trim().orEmpty()
+
+val isReleaseBuild: Boolean
+    get() = properties.containsKey("release")
+
+val artifactPublishVersion: String by project
+version = if (isReleaseBuild) artifactPublishVersion else "master-$gitSha-SNAPSHOT"
+
 dependencies {
-    val kotlinVersion: String by project
-    val kotlinXSerializationVersion: String by project
-    val diskLruCacheVersion: String by project
-    val resultVersion: String by project
-    val junitVersion: String by project
-    val hamcrestVersion: String by project
-    val jsonVersion: String by project
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.diskCache)
 
-    implementation(kotlin("stdlib", kotlinVersion))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinXSerializationVersion")
-    implementation("com.jakewharton:disklrucache:$diskLruCacheVersion")
+    api(libs.result)
 
-    api("com.github.kittinunf.result:result:$resultVersion")
+    testImplementation(libs.test.junit)
+}
 
-    testImplementation("junit:junit:$junitVersion")
-    testImplementation("org.hamcrest:hamcrest-junit:$hamcrestVersion")
-    testImplementation("org.json:json:$jsonVersion")
+val sourcesJar by tasks.registering(Jar::class) {
+    from(project.extensions.getByType<SourceSetContainer>()["main"].allSource)
+    archiveClassifier.set("sources")
 }

@@ -1,16 +1,15 @@
 package com.github.kittinunf.fuse.core.scenario
 
 import com.github.kittinunf.fuse.core.Cache
-import com.github.kittinunf.fuse.core.Fuse
+import com.github.kittinunf.fuse.core.Source
 import com.github.kittinunf.fuse.core.fetch.Fetcher
-import com.github.kittinunf.fuse.core.fetch.NoFetcher
+import com.github.kittinunf.fuse.core.fetch.NeverFetcher
 import com.github.kittinunf.fuse.core.fetch.SimpleFetcher
 import com.github.kittinunf.result.Result
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
+import kotlin.time.Duration.Companion.milliseconds
 
-class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by cache, Fuse.Cacheable.Put<T> by cache {
+class ExpirableCache<T : Any>(private val cache: Cache<T>) : Cache<T> by cache {
 
     /**
      *  Get the entry associated with its particular key which provided by the persistence.
@@ -26,7 +25,6 @@ class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by c
      * @param useEntryEvenIfExpired The flag indicates whether we still want to use the entry or not
      * @return Result<T, Exception> The Result that represents the success/failure of the operation
      */
-    @ExperimentalTime
     fun get(
         fetcher: Fetcher<T>,
         timeLimit: Duration = Duration.INFINITE,
@@ -47,18 +45,17 @@ class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by c
      * @param useEntryEvenIfExpired The flag indicates whether we still want to use the entry or not
      * @return Pair<Result<T, Exception>, Cache.Source> The Pair of the result that represents the success/failure of the operation and The source of the entry
      */
-    @ExperimentalTime
     fun getWithSource(
         fetcher: Fetcher<T>,
         timeLimit: Duration = Duration.INFINITE,
         useEntryEvenIfExpired: Boolean = false
-    ): Pair<Result<T, Exception>, Cache.Source> {
+    ): Pair<Result<T, Exception>, Source> {
         val key = fetcher.key
         val persistedTimestamp = getTimestamp(key)
 
         // no timestamp fetch, we need to just fetch the new data
-        return if (persistedTimestamp == -1L) {
-            put(fetcher) to Cache.Source.ORIGIN
+        return if (persistedTimestamp == null) {
+            put(fetcher) to Source.ORIGIN
         } else {
             val isExpired = hasExpired(persistedTimestamp, timeLimit)
 
@@ -72,9 +69,9 @@ class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by c
         }
     }
 
-    private fun putOrGetFromCacheIfFailure(fetcher: Fetcher<T>): Pair<Result<T, Exception>, Cache.Source> {
+    private fun putOrGetFromCacheIfFailure(fetcher: Fetcher<T>): Pair<Result<T, Exception>, Source> {
         return when (val result = put(fetcher)) {
-            is Result.Success -> result to Cache.Source.ORIGIN
+            is Result.Success -> result to Source.ORIGIN
             is Result.Failure -> {
                 // fallback to cache
                 cache.getWithSource(fetcher)
@@ -82,7 +79,6 @@ class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by c
         }
     }
 
-    @ExperimentalTime
     private fun hasExpired(persistedTimestamp: Long, timeLimit: Duration): Boolean {
         val now = System.currentTimeMillis()
         val durationSincePersisted = (now - persistedTimestamp).milliseconds
@@ -91,30 +87,36 @@ class ExpirableCache<T : Any>(private val cache: Cache<T>) : Fuse.Cacheable by c
 }
 
 // region Value
-@ExperimentalTime
 fun <T : Any> ExpirableCache<T>.get(
     key: String,
-    getValue: (() -> T?)? = null,
+    getValue: (() -> T),
     timeLimit: Duration = Duration.INFINITE,
     useEntryEvenIfExpired: Boolean = false
 ): Result<T, Exception> {
-    val fetcher = if (getValue == null) NoFetcher<T>(key) else SimpleFetcher(key, getValue)
+    val fetcher = SimpleFetcher(key, getValue)
     return get(fetcher, timeLimit, useEntryEvenIfExpired)
 }
 
-@ExperimentalTime
-fun <T : Any> ExpirableCache<T>.getWithSource(
+fun <T : Any> ExpirableCache<T>.get(
     key: String,
-    getValue: (() -> T?)? = null,
     timeLimit: Duration = Duration.INFINITE,
     useEntryEvenIfExpired: Boolean = false
-): Pair<Result<T, Exception>, Cache.Source> {
-    val fetcher = if (getValue == null) NoFetcher<T>(key) else SimpleFetcher(key, getValue)
+): Result<T, Exception> = get(NeverFetcher(key), timeLimit, useEntryEvenIfExpired)
+
+fun <T : Any> ExpirableCache<T>.getWithSource(
+    key: String,
+    getValue: (() -> T),
+    timeLimit: Duration = Duration.INFINITE,
+    useEntryEvenIfExpired: Boolean = false
+): Pair<Result<T, Exception>, Source> {
+    val fetcher = SimpleFetcher(key, getValue)
     return getWithSource(fetcher, timeLimit, useEntryEvenIfExpired)
 }
 
-fun <T : Any> ExpirableCache<T>.put(key: String, putValue: T? = null): Result<T, Exception> {
-    val fetcher = if (putValue == null) NoFetcher<T>(key) else SimpleFetcher(key, { putValue })
-    return put(fetcher)
-}
+fun <T : Any> ExpirableCache<T>.getWithSource(
+    key: String,
+    timeLimit: Duration = Duration.INFINITE,
+    useEntryEvenIfExpired: Boolean = false
+): Pair<Result<T, Exception>, Source> = getWithSource(NeverFetcher(key), timeLimit, useEntryEvenIfExpired)
+
 // endregion

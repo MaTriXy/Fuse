@@ -1,9 +1,8 @@
 # Fuse
 
-[![jcenter](https://api.bintray.com/packages/kittinunf/maven/Fuse/images/download.svg)](https://bintray.com/kittinunf/maven/Fuse/_latestVersion) 
-[![Build Status](https://travis-ci.org/kittinunf/Fuse.svg?branch=master)](https://travis-ci.org/kittinunf/Fuse) 
+[![MavenCentral](https://maven-badges.herokuapp.com/maven-central/com.github.kittinunf.fuse/fuse/badge.svg)](https://search.maven.org/search?q=g:com.github.kittinunf.fuse)
+[![Build Status](https://travis-ci.org/kittinunf/fuse.svg?branch=master)](https://travis-ci.org/kittinunf/fuse)
 [![Codecov](https://codecov.io/github/kittinunf/Fuse/coverage.svg?branch=master)](https://codecov.io/gh/kittinunf/Fuse)
-
 
 The simple generic LRU cache for Android, backed by both memory cache ([LruCache](http://developer.android.com/reference/android/util/LruCache.html)) and disk-based cache ([DiskLruCache](https://github.com/JakeWharton/DiskLruCache)) by Jake Wharton 
 
@@ -11,8 +10,8 @@ The simple generic LRU cache for Android, backed by both memory cache ([LruCache
 
 The core package has following dependencies;
 
-- Kotlin - [![Kotlin](https://img.shields.io/badge/Kotlin-1.3.60-blue.svg)](http://kotlinlang.org)
-- [Result](https://github.com/kittinunf/Result) - 2.2.0
+- [![Kotlin](https://img.shields.io/badge/Kotlin-1.6.20-blue.svg)](http://kotlinlang.org)
+- [Result](https://github.com/kittinunf/Result) - 5.2.1
 
 ```groovy
   //core
@@ -29,7 +28,7 @@ The core package has following dependencies;
 ```kotlin
 private val tempDir = createTempDir().absolutePath // use any readable/writable directory of your choice
 
-val convertible = // there is 1 built-in DataConvertible, StringDataConvertible
+val convertible = // there are couple of built-in Convertibles such as DataConvertible, StringDataConvertible
 val cache = CacheBuilder.config(tempDir, convertible) { 
   // do more configuration here
 }.build()

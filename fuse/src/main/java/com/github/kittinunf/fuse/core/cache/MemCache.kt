@@ -1,6 +1,6 @@
 package com.github.kittinunf.fuse.core.cache
 
-class MemCache(val maxSize: Int) : Persistence<Any> {
+internal class MemCache(val maxSize: Int) : Persistence<Any> {
 
     val cache: MutableMap<String, Any> = object : LinkedHashMap<String, Any>(0, 0.75f, true) {
 
@@ -37,5 +37,6 @@ class MemCache(val maxSize: Int) : Persistence<Any> {
 
     override fun getTimestamp(safeKey: String): Long? = getEntry(safeKey)?.timestamp
 
+    @Suppress("UNCHECKED_CAST")
     private fun getEntry(safeKey: String): Entry<Any>? = cache.get(safeKey) as? Entry<Any>
 }

@@ -1,28 +1,28 @@
 package com.github.kittinunf.fuse.android
 
 import com.github.kittinunf.fuse.core.ByteArrayDataConvertible
-import com.github.kittinunf.fuse.core.Cache
 import com.github.kittinunf.fuse.core.CacheBuilder
+import com.github.kittinunf.fuse.core.Source
 import com.github.kittinunf.fuse.core.build
 import com.github.kittinunf.fuse.core.fetch.NotFoundException
 import com.github.kittinunf.fuse.core.get
 import com.github.kittinunf.fuse.core.getWithSource
 import com.github.kittinunf.fuse.core.put
-import java.nio.charset.Charset
-import java.util.concurrent.CountDownLatch
+import org.hamcrest.BaseMatcher
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.hasItems
 import org.hamcrest.CoreMatchers.isA
 import org.hamcrest.CoreMatchers.not
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.CoreMatchers.nullValue
-import org.hamcrest.Matchers.empty
-import org.hamcrest.Matchers.greaterThan
-import org.junit.Assert.assertThat
+import org.hamcrest.Description
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Test
 import org.junit.runners.MethodSorters
+import java.nio.charset.Charset
+import java.util.concurrent.CountDownLatch
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class FuseByteCacheTest : BaseTestCase() {
@@ -52,7 +52,7 @@ class FuseByteCacheTest : BaseTestCase() {
         assertThat(value, notNullValue())
         assertThat(value!!.toString(Charset.defaultCharset()), equalTo("world"))
         assertThat(error, nullValue())
-        assertThat(source, equalTo(Cache.Source.ORIGIN))
+        assertThat(source, equalTo(Source.ORIGIN))
     }
 
     @Test
@@ -76,7 +76,7 @@ class FuseByteCacheTest : BaseTestCase() {
 
         assertThat(value, nullValue())
         assertThat(error, notNullValue())
-        assertThat(source, equalTo(Cache.Source.ORIGIN))
+        assertThat(source, equalTo(Source.ORIGIN))
     }
 
     @Test
@@ -87,7 +87,7 @@ class FuseByteCacheTest : BaseTestCase() {
         assertThat(value, notNullValue())
         assertThat(value!!.toString(Charset.defaultCharset()), equalTo("world"))
         assertThat(error, nullValue())
-        assertThat(source, equalTo(Cache.Source.MEM))
+        assertThat(source, equalTo(Source.MEM))
     }
 
     @Test
@@ -100,7 +100,7 @@ class FuseByteCacheTest : BaseTestCase() {
         assertThat(error, nullValue())
 
         // remove from memory cache
-        cache.remove("hello", Cache.Source.MEM)
+        cache.remove("hello", Source.MEM)
 
         val (result2, source2) = cache.getWithSource("hello", { "world".toByteArray() })
         val (value2, error2) = result2
@@ -108,7 +108,7 @@ class FuseByteCacheTest : BaseTestCase() {
         assertThat(value2, notNullValue())
         assertThat(value2!!.toString(Charset.defaultCharset()), equalTo("world"))
         assertThat(error2, nullValue())
-        assertThat(source2, equalTo(Cache.Source.DISK))
+        assertThat(source2, equalTo(Source.DISK))
     }
 
     @Test
@@ -168,8 +168,15 @@ class FuseByteCacheTest : BaseTestCase() {
 
         val timestamp = cache.getTimestamp("timestamp")
 
+        assertThat(timestamp, notNullValue())
         assertThat(timestamp, not(equalTo(-1L)))
-        assertThat(System.currentTimeMillis() - timestamp, greaterThan(2000L))
+        assertThat(System.currentTimeMillis() - timestamp!!, object : BaseMatcher<Long>() {
+            override fun describeTo(description: Description?) {}
+
+            override fun matches(item: Any?): Boolean {
+                return (item as Long) > 2000L
+            }
+        })
     }
 
     @Test
@@ -180,10 +187,10 @@ class FuseByteCacheTest : BaseTestCase() {
         assertThat(value, notNullValue())
         assertThat(value!!.toString(Charset.defaultCharset()), equalTo("yoyo"))
         assertThat(error, nullValue())
-        assertThat(source, equalTo(Cache.Source.ORIGIN))
+        assertThat(source, equalTo(Source.ORIGIN))
 
-        cache.remove("YOYO", Cache.Source.MEM)
-        cache.remove("YOYO", Cache.Source.DISK)
+        cache.remove("YOYO", Source.MEM)
+        cache.remove("YOYO", Source.DISK)
 
         val (anotherValue, anotherError) = cache.get("YOYO")
 
@@ -207,10 +214,10 @@ class FuseByteCacheTest : BaseTestCase() {
     fun removeFromDisk() {
         cache.put("remove", "test".toByteArray())
 
-        val result = cache.remove("remove", Cache.Source.DISK)
+        val result = cache.remove("remove", Source.DISK)
         assertThat(result, equalTo(true))
 
-        val anotherResult = cache.remove("remove", Cache.Source.MEM)
+        val anotherResult = cache.remove("remove", Source.MEM)
         assertThat(anotherResult, equalTo(true))
 
         val hasKey = cache.hasKey("remove")
@@ -227,7 +234,7 @@ class FuseByteCacheTest : BaseTestCase() {
         }
         lock.wait()
 
-        assertThat(cache.allKeys(), not(empty()))
+        assertThat(cache.allKeys().size, not(equalTo(0)))
         (1..count).forEach {
             assertThat(
                 cache.allKeys(),
@@ -235,6 +242,6 @@ class FuseByteCacheTest : BaseTestCase() {
             )
         }
         cache.removeAll()
-        assertThat(cache.allKeys(), empty())
+        assertThat(cache.allKeys().size, equalTo(0))
     }
 }

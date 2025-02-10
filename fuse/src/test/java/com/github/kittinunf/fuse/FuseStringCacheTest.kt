@@ -1,7 +1,7 @@
 package com.github.kittinunf.fuse
 
-import com.github.kittinunf.fuse.core.Cache
 import com.github.kittinunf.fuse.core.CacheBuilder
+import com.github.kittinunf.fuse.core.Source
 import com.github.kittinunf.fuse.core.StringDataConvertible
 import com.github.kittinunf.fuse.core.build
 import com.github.kittinunf.fuse.core.get
@@ -9,7 +9,7 @@ import com.github.kittinunf.fuse.core.getWithSource
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.CoreMatchers.nullValue
-import org.junit.Assert.assertThat
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
 import org.junit.Test
 
@@ -37,7 +37,7 @@ class FuseStringCacheTest : BaseTestCase() {
         assertThat(value, notNullValue())
         assertThat(value, equalTo("world"))
         assertThat(error, nullValue())
-        assertThat(source, equalTo(Cache.Source.ORIGIN))
+        assertThat(source, equalTo(Source.ORIGIN))
     }
 
     @Test
@@ -74,6 +74,6 @@ class FuseStringCacheTest : BaseTestCase() {
         assertThat(anotherValue, notNullValue())
         assertThat(anotherValue, equalTo("WORLD"))
         assertThat(anotherError, nullValue())
-        assertThat(anotherSource, equalTo(Cache.Source.ORIGIN))
+        assertThat(anotherSource, equalTo(Source.ORIGIN))
     }
 }
